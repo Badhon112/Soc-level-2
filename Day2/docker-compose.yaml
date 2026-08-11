@@ -1,0 +1,109 @@
+services:
+  securebank:
+    build: ./src/SecureBank
+    container_name: securebank
+    depends_on:
+      - postgres
+      - maildev
+      - storeapi
+    environment: 
+      - AppSettings:BaseUrl=http://localhost:1337
+      - AppSettings:PingHome=true
+      - AppSettings:StoreEndpoint:ApiUrl=http://storeapi:80/api/Store/
+      - AppSettings:StoreEndpoint:ApiToken=
+      - AppSettings:SmtpCredentials:Ip=maildev
+      - AppSettings:SmtpCredentials:Port=25
+      - AppSettings:SmtpCredentials:Username=
+      - AppSettings:SmtpCredentials:Password=
+      - AppSettings:Ctf:Enabled=false
+      - AppSettings:Ctf:Seed=example
+      - AppSettings:Ctf:GenerateCtfdExport=true
+      - AppSettings:Ctf:FlagFormat=ctf{{{0}}}
+#      - AppSettings:Ctf:FlagFormat=ctf{{{0}}}.challenge{1}"
+      - AppSettings:Ctf:UseRealChallengeName=true
+      - AppSettings:Ctf:Challenges:SqlInjection=true
+      - AppSettings:Ctf:Challenges:WeakPassword=true
+      - AppSettings:Ctf:Challenges:SensitiveDataExposureStore=true
+      - AppSettings:Ctf:Challenges:SensitiveDataExposureBalance=true
+      - AppSettings:Ctf:Challenges:SensitiveDataExposureProfileImage=true
+      - AppSettings:Ctf:Challenges:ExceptionHandlingTransactionUpload=true
+      - AppSettings:Ctf:Challenges:PathTraversal=true
+      - AppSettings:Ctf:Challenges:Enumeration=true
+      - AppSettings:Ctf:Challenges:XxeInjection=true
+      - AppSettings:Ctf:Challenges:MissingAuthentication=true
+      - AppSettings:Ctf:Challenges:RegistrationRoleSet=true
+      - AppSettings:Ctf:Challenges:ChangeRoleInCookie=true
+      - AppSettings:Ctf:Challenges:UnconfirmedLogin=true
+      - AppSettings:Ctf:Challenges:ExceptionHandlingTransactionCreate=true
+      - AppSettings:Ctf:Challenges:TableXss=true
+      - AppSettings:Ctf:Challenges:PortalSearchXss=true
+      - AppSettings:Ctf:Challenges:InvalidModelStore=true
+      - AppSettings:Ctf:Challenges:InvalidModelTransaction=true
+      - AppSettings:Ctf:Challenges:UnknownGeneration=true
+      - AppSettings:Ctf:Challenges:HiddenPageRegisterAdmin=true
+      - AppSettings:Ctf:Challenges:HiddenPageLoginAdmin=true
+      - AppSettings:Ctf:Challenges:InvalidRedirect=true
+      - AppSettings:Ctf:Challenges:DirectoryBrowsing=true
+      - AppSettings:Ctf:Challenges:Swagger=true
+      - AppSettings:Ctf:Challenges:Base2048Content=true
+      - AppSettings:Ctf:Challenges:SimultaneousRequest=true
+      - AppSettings:Ctf:Challenges:reDOS=true
+      - AppSettings:Ctf:Challenges:FreeCredit=true
+      - DatabaseConnections:SecureBankMSSQL:UserId=securebank
+      - DatabaseConnections:SecureBankMSSQL:UserPass=Your_Password123
+      - DatabaseConnections:SecureBankMSSQL:Server=postgres
+      - DatabaseConnections:SecureBankMSSQL:ServerPort=5432
+      - DatabaseConnections:SecureBankMSSQL:Database=securebank
+      - SeedingSettings:Seed=true
+      - SeedingSettings:Admin=admin@ssrd.io
+      - SeedingSettings:AdminPassword=admin
+      - SeedingSettings:UserPassword=test1
+    volumes:
+      -  ./logs/securebank:/app/logs
+    ports: 
+      - 80:80
+  
+  storeapi:
+    build: ./src/StoreAPI
+    container_name: storeapi
+    depends_on: 
+      - postgres
+    environment: 
+      - DatabaseConnections:StoreMSSQL:UserId=securebank
+      - DatabaseConnections:StoreMSSQL:UserPass=Your_Password123
+      - DatabaseConnections:StoreMSSQL:Server=postgres
+      - DatabaseConnections:StoreMSSQL:ServerPort=5432
+      - DatabaseConnections:StoreMSSQL:Database=store
+      - ASPNETCORE_HTTP_PORTS=80
+      - StoreAPI:Seed=true
+      - Ctf:Enabled=false
+      - Ctf:Seed=example
+      - Ctf:FlagFormat=ctf{{{0}}}
+      - Ctf:Challenges:Ssrf=true
+    volumes:
+      - ./logs/storeapi:/app/logs
+    ports:
+      - 8088:80
+  
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment: 
+      - POSTGRES_USER=securebank
+      - POSTGRES_PASSWORD=Your_Password123
+      - POSTGRES_DB=securebank
+    ports: 
+      - 5432:5432
+    volumes: 
+      - pgdata:/var/lib/postgresql/data
+      - ./init-store-db.sql:/docker-entrypoint-initdb.d/init-store-db.sql
+
+  maildev:
+    image: maildev/maildev:2.2.1
+    container_name: maildev
+    ports: 
+      - '1080:1080'
+      - '1025:1025'
+
+volumes: 
+  pgdata:
