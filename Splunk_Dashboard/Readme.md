@@ -19,3 +19,10 @@
 
 3. Visualization
 
+After uploading the Kali_syslog.txt in splunk this the SPL(Search Processing Language) to get all the data
+
+```bash
+
+source="kali_syslog.txt" host="71f889c8eafa" sourcetype="Linux Log"
+
+```
